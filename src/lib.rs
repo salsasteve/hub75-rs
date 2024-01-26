@@ -24,12 +24,14 @@ const NUM_ROWS: usize = 32;
 #[cfg(not(feature = "size-64x64"))]
 const NUM_ROWS: usize = 16;
 
+const MAX_BRIGHTNESS_LEVELS: usize = 8;
 pub struct Hub75<PINS> {
     //       r1, g1, b1, r2, g2, b2, column, row
     data: [[(u8, u8, u8, u8, u8, u8); 64]; NUM_ROWS],
     brightness_step: u8,
     brightness_count: u8,
     pins: PINS,
+    brightness_lookup_table: [[bool; 256]; MAX_BRIGHTNESS_LEVELS],
 }
 
 /// A trait, so that it's easier to reason about the pins
@@ -238,12 +240,15 @@ impl<PINS: Outputs> Hub75<PINS> {
         let data = [[(0, 0, 0, 0, 0, 0); 64]; NUM_ROWS];
         let brightness_step = 1 << (8 - brightness_bits);
         let brightness_count = ((1 << brightness_bits as u16) - 1) as u8;
-        Self {
+        let mut instance = Self {
             data,
             brightness_step,
             brightness_count,
             pins,
-        }
+            brightness_lookup_table: [[false; 256]; MAX_BRIGHTNESS_LEVELS],
+        };
+        instance.precompute_brightness_lookup();
+        instance
     }
 
     /// Output the buffer to the display
@@ -339,6 +344,17 @@ impl<PINS: Outputs> Hub75<PINS> {
         // Prevents one row from being much brighter than the others
         self.pins.oe().set_high()?; 
         Ok(())
+    }
+
+
+    /// Precomputes the pin states for each brightness level and creates a lookup table.
+    fn precompute_brightness_lookup(&mut self) {
+        for brightness in 0..self.brightness_count as usize {
+            let adjusted_brightness = (brightness + 1) * self.brightness_step as usize;
+            for value in 0..256 {
+                self.brightness_lookup_table[brightness][value] = value >= adjusted_brightness;
+            }
+        }
     }
     /// Clear the output
     ///
