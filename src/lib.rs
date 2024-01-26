@@ -261,8 +261,8 @@ impl<PINS: Outputs> Hub75<PINS> {
         // https://justanotherelectronicsblog.com/?p=636
         self.pins.oe().set_low()?;
         // PWM cycle
-        for mut brightness in 0..self.brightness_count { // how many time to repeat the frame
-            brightness = (brightness + 1).saturating_mul(self.brightness_step);
+        for brightness_level in 0..self.brightness_count as usize { // how many time to repeat the frame
+            //brightness = (brightness + 1).saturating_mul(self.brightness_step);
             // Data is a 2d array, with each row being a row of the display
             // Each row is a tuple of 64 elements, each element being a tuple of 6 u8s
             // The first 3 u8s are the color of the top half of the pixel
@@ -270,32 +270,37 @@ impl<PINS: Outputs> Hub75<PINS> {
 
             for (count, row) in self.data.iter().enumerate() {
                 for element in row.iter() {
-                    if element.0 >= brightness {
+                    if self.brightness_lookup_table[brightness_level][element.0 as usize] {
                         self.pins.r1().set_high()?;
                     } else {
                         self.pins.r1().set_low()?;
                     }
-                    if element.1 >= brightness {
+                    // if element.0 >= brightness {
+                    //     self.pins.r1().set_high()?;
+                    // } else {
+                    //     self.pins.r1().set_low()?;
+                    // }
+                    if self.brightness_lookup_table[brightness_level][element.1 as usize] {
                         self.pins.g1().set_high()?;
                     } else {
                         self.pins.g1().set_low()?;
                     }
-                    if element.2 >= brightness {
+                    if self.brightness_lookup_table[brightness_level][element.2 as usize] {
                         self.pins.b1().set_high()?;
                     } else {
                         self.pins.b1().set_low()?;
                     }
-                    if element.3 >= brightness {
+                    if self.brightness_lookup_table[brightness_level][element.3 as usize] {
                         self.pins.r2().set_high()?;
                     } else {
                         self.pins.r2().set_low()?;
                     }
-                    if element.4 >= brightness {
+                    if self.brightness_lookup_table[brightness_level][element.4 as usize] {
                         self.pins.g2().set_high()?;
                     } else {
                         self.pins.g2().set_low()?;
                     }
-                    if element.5 >= brightness {
+                    if self.brightness_lookup_table[brightness_level][element.5 as usize] {
                         self.pins.b2().set_high()?;
                     } else {
                         self.pins.b2().set_low()?;
