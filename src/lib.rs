@@ -253,10 +253,16 @@ impl<PINS: Outputs> Hub75<PINS> {
     pub fn output<DELAY: DelayUs<u8>>(&mut self, delay: &mut DELAY) -> Result<(), PINS::Error> {
         // Enable the output
         // The previous last row will continue to display
+        // https://justanotherelectronicsblog.com/?p=636
         self.pins.oe().set_low()?;
         // PWM cycle
-        for mut brightness in 0..self.brightness_count {
+        for mut brightness in 0..self.brightness_count { // how many time to repeat the frame
             brightness = (brightness + 1).saturating_mul(self.brightness_step);
+            // Data is a 2d array, with each row being a row of the display
+            // Each row is a tuple of 64 elements, each element being a tuple of 6 u8s
+            // The first 3 u8s are the color of the top half of the pixel
+            // The last 3 u8s are the color of the bottom half of the pixel
+
             for (count, row) in self.data.iter().enumerate() {
                 for element in row.iter() {
                     if element.0 >= brightness {
@@ -331,7 +337,7 @@ impl<PINS: Outputs> Hub75<PINS> {
         }
         // Disable the output
         // Prevents one row from being much brighter than the others
-        self.pins.oe().set_high()?;
+        self.pins.oe().set_high()?; 
         Ok(())
     }
     /// Clear the output
